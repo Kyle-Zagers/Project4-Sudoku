@@ -6,7 +6,7 @@ from board import Board
 import pygame
 
 
-def start_screen(screen):
+def start_screen(screen):  #
     pygame.display.set_caption("Sudoku")
 
     # Color background
@@ -164,16 +164,6 @@ def has_won(screen, board):
     if won:
         won_exit_screen(screen)
     else:
-        loss_exit_screen(screen)
-
-
-def has_lost(screen, board, row, col):
-    not_lose = False
-    for i in range(9):
-        if board.sudoku.is_valid(row, col, i + 1):
-            not_lose = True
-            break
-    if not not_lose:
         loss_exit_screen(screen)
 
 
