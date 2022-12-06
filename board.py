@@ -5,9 +5,10 @@ from cell import Cell
 
 
 class Board:
-    cells = {}
+    cells = {}  # Dictionary that keeps track of the cells.
 
     def __init__(self, width, height, screen, difficulty):
+        # Various class variables for the board.
         self.width = width
         self.height = height-75
         self.screen = screen
@@ -17,43 +18,45 @@ class Board:
         self.exit_rectangle = None
         self.removed = difficulty
 
+        # Gets the board from the sudoku generator.
         self.sudoku = SudokuGenerator(9, self.removed)
         self.sudoku.fill_values()
         self.sudoku.remove_cells()
         self.board = self.sudoku.get_board()
 
+        # Creates creates the cell objects and organizes them in the cell dictionary.
         for column in range(9):
             self.cells[column] = {}
             for row in range(9):
                 self.cells[column][row] = Cell(f"{self.board[column][row]}", row, column, screen)
 
-    def draw(self):
+    def draw(self):  # Draws the board and other supporting elements.
         # draw horizontal lines
         for i in range(1, 3):
             pygame.draw.line(self.screen, LINE_COLOR, (0, SQUARE_SIZE * i),
                              (self.width, SQUARE_SIZE * i), BOLD_LINE_WIDTH)
+        for i in range(1, 9):
+            pygame.draw.line(self.screen, LINE_COLOR, (0, CELL_SIZE * i),
+                             (self.width, CELL_SIZE * i), THIN_LINE_WIDTH)
 
-            for i in range(1, 9):
-                pygame.draw.line(self.screen, LINE_COLOR, (0, CELL_SIZE * i),
-                                 (self.width, CELL_SIZE * i), THIN_LINE_WIDTH)
         # draw vertical lines
         for i in range(1, 3):
             pygame.draw.line(self.screen, LINE_COLOR, (SQUARE_SIZE * i, 0),
                              (SQUARE_SIZE * i, self.height), BOLD_LINE_WIDTH)
-
         for i in range(1, 9):
             pygame.draw.line(self.screen, LINE_COLOR, (CELL_SIZE * i, 0),
                              (CELL_SIZE * i, self.height), THIN_LINE_WIDTH)
 
+        # Draws the line at the bottom of the window above the buttons.
         pygame.draw.line(self.screen, (0, 125, 200), (0, SQUARE_SIZE + 56 * 8),
                          (self.width, SQUARE_SIZE + 56 * 8), BOLD_LINE_WIDTH)
 
+        # Draws the cells.
         for i in range(9):
             for j in range(9):
                 self.cells[i][j].draw()
 
         # Initialize buttons
-        # Initialize text first
         reset_text = BUTTON_FONT.render("Reset", True, (255, 255, 255))
         restart_text = BUTTON_FONT.render("Restart", True, (255, 255, 255))
         exit_text = BUTTON_FONT.render("Exit", True, (255, 255, 255))
@@ -72,13 +75,11 @@ class Board:
         exit_surface.blit(exit_text, (10, 10))
 
         # Initialize button rectangles
-
         self.reset_rectangle = reset_surface.get_rect(center=(WIDTH // 4, HEIGHT // 2 + 338))
         self.restart_rectangle = restart_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 338))
         self.exit_rectangle = exit_surface.get_rect(center=((3 * WIDTH) // 4, HEIGHT // 2 + 338))
 
         # Draw buttons
-
         self.screen.blit(reset_surface, self.reset_rectangle)
         self.screen.blit(restart_surface, self.restart_rectangle)
         self.screen.blit(exit_surface, self.exit_rectangle)
