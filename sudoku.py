@@ -1,4 +1,6 @@
 import sys
+
+import sudoku_generator
 from constants import *
 from board import Board
 import pygame
@@ -59,11 +61,11 @@ def start_screen(screen):
                     sys.exit()
                 case pygame.MOUSEBUTTONDOWN:
                     if easy_rectangle.collidepoint(event.pos):
-                        return "easy"
+                        return 30
                     if medium_rectangle.collidepoint(event.pos):
-                        return "medium"
+                        return 40
                     if hard_rectangle.collidepoint(event.pos):
-                        return "hard"
+                        return 50
         pygame.display.update()
 
 
@@ -133,23 +135,60 @@ def loss_exit_screen(screen):
         pygame.display.update()
 
 
+def game_buttons(board, screen, event, mode):
+    result = True
+    if board.reset_rectangle.collidepoint(event.pos):
+        screen.fill(BG_COLOR)
+        board = Board(WIDTH, HEIGHT, screen, mode)
+        board.draw()
+        pygame.display.update()
+    elif board.restart_rectangle.collidepoint(event.pos):
+        main()
+    elif board.exit_rectangle.collidepoint(event.pos):
+        sys.exit()
+    else:
+        result = False
+    return [result, board]
+
+
 def has_won(screen, board):
     won = True
     for x in range(9):
         for y in range(9):
+            board.sudoku.board[x][y] = 0
+            if not board.sudoku.is_valid(x, y, board.cells[x][y].sketched_value):
+                won = False
+            board.sudoku.board[x][y] = board.cells[x][y].sketched_value
             if board.cells[x][y].value == "0" and board.cells[x][y].sketched_value == 0:
                 won = False
     if won:
         won_exit_screen(screen)
+    else:
+        loss_exit_screen(screen)
+
+
+def has_lost(screen, board, row, col):
+    not_lose = False
+    for i in range(9):
+        if board.sudoku.is_valid(row, col, i + 1):
+            not_lose = True
+            break
+    if not not_lose:
+        loss_exit_screen(screen)
+
+
+def number_input(board, row, col, key):
+    board.cells[row][col].set_sketched_value(f"{key}")
+    board.sudoku.board[row][col] = key
 
 
 def main():
     pygame.init()
     screen = pygame.display.set_mode([WIDTH, HEIGHT])
-    mode = start_screen(screen)
+    removed = start_screen(screen)
     screen.fill(BG_COLOR)
 
-    board = Board(WIDTH, HEIGHT, screen, mode)
+    board = Board(WIDTH, HEIGHT, screen, removed)
     board.draw()
     pygame.display.update()
     while True:
@@ -157,103 +196,77 @@ def main():
             match event.type:
                 case pygame.QUIT:
                     sys.exit()
+                case pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        has_won(screen, board)
+                        break
                 case pygame.MOUSEBUTTONDOWN:
-                    if board.reset_rectangle.collidepoint(event.pos):
-                        screen.fill(BG_COLOR)
-                        board = Board(WIDTH, HEIGHT, screen, mode)
-                        board.draw()
-                        pygame.display.update()
-                    elif board.restart_rectangle.collidepoint(event.pos):
-                        main()
-                    elif board.exit_rectangle.collidepoint(event.pos):
-                        sys.exit()
-                    else:
+                    buttons = game_buttons(board, screen, event, removed)
+                    board = buttons[1]
+                    if not buttons[0]:
                         for row in board.cells:
                             for col in board.cells[row]:
-                                if board.cells[row][col].value_rect.collidepoint(event.pos) and board.cells[row][col].value == "0":
-                                    not_lose = False
-                                    for i in range(9):
-                                        if board.sudoku.is_valid(row, col, i+1):
-                                            not_lose = True
-                                            break
-                                    if not not_lose:
-                                        loss_exit_screen(screen)
+                                if board.cells[row][col].value_rect.collidepoint(event.pos)\
+                                        and board.cells[row][col].value == "0":
                                     go = True
                                     while go:
+                                        board.cells[row][col].make_highlight()
                                         for event2 in pygame.event.get():
                                             if event2.type == pygame.KEYDOWN:
-                                                if event2.key == pygame.K_1:
-                                                    if board.sudoku.is_valid(row, col, 1):
-                                                        board.cells[row][col].set_sketched_value("1")
-                                                        board.sudoku.board[row][col] = 1
+                                                match event2.key:
+                                                    case pygame.K_DOWN:
+                                                        board.cells[row][col].delete_highlight()
+                                                        col += 1 if col != 8 else 0
+                                                    case pygame.K_UP:
+                                                        board.cells[row][col].delete_highlight()
+                                                        col -= 1 if col != 0 else 0
+                                                    case pygame.K_RIGHT:
+                                                        board.cells[row][col].delete_highlight()
+                                                        row += 1 if row != 8 else 0
+                                                    case pygame.K_LEFT:
+                                                        board.cells[row][col].delete_highlight()
+                                                        row -= 1 if row != 0 else 0
+                                                    case pygame.K_1:
+                                                        number_input(board, row, col, 1)
                                                         go = False
                                                         break
-                                                if event2.key == pygame.K_2:
-                                                    if board.sudoku.is_valid(row, col, 2):
-                                                        board.cells[row][col].set_sketched_value("2")
-                                                        board.sudoku.board[row][col] = 2
+                                                    case pygame.K_2:
+                                                        number_input(board, row, col, 2)
                                                         go = False
                                                         break
-                                                if event2.key == pygame.K_3:
-                                                    if board.sudoku.is_valid(row, col, 3):
-                                                        board.cells[row][col].set_sketched_value("3")
-                                                        board.sudoku.board[row][col] = 3
+                                                    case pygame.K_3:
+                                                        number_input(board, row, col, 3)
                                                         go = False
                                                         break
-                                                if event2.key == pygame.K_4:
-                                                    if board.sudoku.is_valid(row, col, 4):
-                                                        board.cells[row][col].set_sketched_value("4")
-                                                        board.sudoku.board[row][col] = 4
+                                                    case pygame.K_4:
+                                                        number_input(board, row, col, 4)
                                                         go = False
                                                         break
-                                                if event2.key == pygame.K_5:
-                                                    if board.sudoku.is_valid(row, col, 5):
-                                                        board.cells[row][col].set_sketched_value("5")
-                                                        board.sudoku.board[row][col] = 5
+                                                    case pygame.K_5:
+                                                        number_input(board, row, col, 5)
                                                         go = False
                                                         break
-                                                if event2.key == pygame.K_6:
-                                                    if board.sudoku.is_valid(row, col, 6):
-                                                        board.cells[row][col].set_sketched_value("6")
-                                                        board.sudoku.board[row][col] = 6
+                                                    case pygame.K_6:
+                                                        number_input(board, row, col, 6)
                                                         go = False
                                                         break
-                                                if event2.key == pygame.K_7:
-                                                    if board.sudoku.is_valid(row, col, 7):
-                                                        board.cells[row][col].set_sketched_value("7")
-                                                        board.sudoku.board[row][col] = 7
+                                                    case pygame.K_7:
+                                                        number_input(board, row, col, 7)
                                                         go = False
                                                         break
-                                                if event2.key == pygame.K_8:
-                                                    if board.sudoku.is_valid(row, col, 8):
-                                                        board.cells[row][col].set_sketched_value("8")
-                                                        board.sudoku.board[row][col] = 8
+                                                    case pygame.K_8:
+                                                        number_input(board, row, col, 8)
                                                         go = False
                                                         break
-                                                if event2.key == pygame.K_9:
-                                                    if board.sudoku.is_valid(row, col, 9):
-                                                        board.cells[row][col].set_sketched_value("9")
-                                                        board.sudoku.board[row][col] = 9
+                                                    case pygame.K_9:
+                                                        number_input(board, row, col, 9)
                                                         go = False
                                                         break
                                             if event2.type == pygame.QUIT:
                                                 sys.exit()
                                             if event2.type == pygame.MOUSEBUTTONDOWN:
-                                                if board.reset_rectangle.collidepoint(event2.pos):
-                                                    screen.fill(BG_COLOR)
-                                                    board = Board(WIDTH, HEIGHT, screen, mode)
-                                                    board.draw()
-                                                    pygame.display.update()
-                                                elif board.restart_rectangle.collidepoint(event2.pos):
-                                                    main()
-                                                elif board.exit_rectangle.collidepoint(event2.pos):
-                                                    sys.exit()
-                                    has_won(screen, board)
-
-                case pygame.KEYDOWN:
-                    if event.key == pygame.K_r:
-                        print("reset")
-                        # for resetting the game when "r" pressed.
+                                                board = game_buttons(board, screen, event2, removed)[1]
+                                    board.cells[row][col].delete_highlight()
 
 
 if __name__ == "__main__":

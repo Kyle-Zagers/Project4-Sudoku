@@ -15,13 +15,7 @@ class Board:
         self.reset_rectangle = None
         self.restart_rectangle = None
         self.exit_rectangle = None
-        match difficulty:
-            case "easy":
-                self.removed = 30
-            case "medium":
-                self.removed = 40
-            case "hard":
-                self.removed = 50
+        self.removed = difficulty
 
         self.sudoku = SudokuGenerator(9, self.removed)
         self.sudoku.fill_values()
